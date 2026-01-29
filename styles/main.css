@@ -1,0 +1,94 @@
+/* styles/main.css */
+
+/* MapLibre Canvas base */
+.maplibregl-map {
+    font-family: inherit;
+}
+
+/* Glassmorphism Utilities (Tailwind handles most, but specific overrides here) */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Custom Animations */
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+@keyframes slideDown {
+    from { transform: translateY(0); }
+    to { transform: translateY(100%); }
+}
+
+/* Filter Chip Active/Inactive transitions */
+.filter-chip {
+    transition: all 0.2s ease;
+}
+.filter-chip:active {
+    transform: scale(0.95);
+}
+
+/* Modal Transitions */
+#create-modal-content, #detail-modal-content {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); /* Ease Out Expoish */
+}
+
+/* Map Marker Styles */
+.marker {
+    background-image: url('https://docs.mapbox.com/mapbox-gl-js/assets/custom_marker.png'); /* Placeholder, we will use custom divs */
+    background-size: cover;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.custom-marker {
+    width: 40px;
+    height: 40px;
+    background-color: #007AFF;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.custom-marker:hover {
+    transform: scale(1.1) translateY(-5px);
+    z-index: 10;
+}
+
+/* Pulse animation for user location */
+.user-marker {
+    width: 20px;
+    height: 20px;
+    background-color: #007AFF;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7);
+    animation: pulse-blue 2s infinite;
+}
+
+@keyframes pulse-blue {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(0, 122, 255, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);
+    }
+}
