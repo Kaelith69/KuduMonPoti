@@ -30,11 +30,16 @@ const submitRatingBtn = document.getElementById('submit-rating-btn');
 const filterContainer = document.getElementById('filter-container');
 const searchInput = document.getElementById('search-input');
 
-// Elements for My Tasks View
+// Elements for Views
 const myTasksPage = document.getElementById('my-tasks-page');
+const profilePage = document.getElementById('profile-page');
 const appPageMap = document.getElementById('app-page-map');
+
+// Navigation
 const navExplore = document.getElementById('nav-explore');
 const navMyTasks = document.getElementById('nav-mytasks');
+const navProfile = document.getElementById('nav-profile');
+
 const myTasksList = document.getElementById('my-tasks-list');
 const tabPosted = document.getElementById('tab-posted');
 const tabClaimed = document.getElementById('tab-claimed');
@@ -177,34 +182,98 @@ if (searchInput) {
 }
 
 // Navigation
-if (navExplore && navMyTasks) {
+if (navExplore && navMyTasks && navProfile) {
     navExplore.addEventListener('click', () => {
         switchView('explore');
     });
     navMyTasks.addEventListener('click', () => {
         switchView('mytasks');
     });
+    navProfile.addEventListener('click', () => {
+        switchView('profile');
+    });
 }
 
 function switchView(view) {
+    // Reset all navs
+    navExplore.classList.remove('active', 'text-primary');
+    navExplore.classList.add('text-gray-400');
+    navMyTasks.classList.remove('active', 'text-primary');
+    navMyTasks.classList.add('text-gray-400');
+    navProfile.classList.remove('active', 'text-primary');
+    navProfile.classList.add('text-gray-400');
+
+    // Hide all pages
+    appPageMap.classList.add('hidden');
+    myTasksPage.classList.add('hidden');
+    profilePage.classList.add('hidden');
+
     if (view === 'explore') {
         appPageMap.classList.remove('hidden');
-        myTasksPage.classList.add('hidden');
-
         navExplore.classList.add('active', 'text-primary');
         navExplore.classList.remove('text-gray-400');
-        navMyTasks.classList.remove('active', 'text-primary');
-        navMyTasks.classList.add('text-gray-400');
-    } else {
-        appPageMap.classList.add('hidden');
+    } else if (view === 'mytasks') {
         myTasksPage.classList.remove('hidden');
-
         navMyTasks.classList.add('active', 'text-primary');
         navMyTasks.classList.remove('text-gray-400');
-        navExplore.classList.remove('active', 'text-primary');
-        navExplore.classList.add('text-gray-400');
-
         renderMyTasks();
+    } else if (view === 'profile') {
+        profilePage.classList.remove('hidden');
+        navProfile.classList.add('active', 'text-primary');
+        navProfile.classList.remove('text-gray-400');
+        renderProfile();
+    }
+}
+
+function renderProfile() {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // Update Basic Info
+    const avatarLetter = (user.email || "?")[0].toUpperCase();
+    const avatarEl = document.getElementById('profile-avatar-text');
+    if (avatarEl) avatarEl.textContent = avatarLetter;
+
+    document.getElementById('profile-name').textContent = user.displayName || "User";
+    document.getElementById('profile-email').textContent = user.email;
+
+    // Calculate Stats
+    let postedCount = 0;
+    let completedCount = 0;
+    let totalRating = 0;
+    let ratingCount = 0;
+
+    allTasks.forEach(task => {
+        // Posted Count
+        if (task.poster.id === user.uid) {
+            postedCount++;
+        }
+        // Completed Count & Rating (As Assignee context usually, or general reputation?)
+        // Let's count tasks I completed for others
+        if (task.assignee?.id === user.uid && task.status === 'completed') {
+            completedCount++;
+            if (task.rating) {
+                totalRating += task.rating;
+                ratingCount++;
+            }
+        }
+    });
+
+    const avgRating = ratingCount > 0 ? (totalRating / ratingCount).toFixed(1) : "0.0";
+
+    document.getElementById('stat-posted').textContent = postedCount;
+    document.getElementById('stat-completed').textContent = completedCount;
+    document.getElementById('stat-rating').textContent = avgRating;
+
+    // Update badge on profile page
+    const badge = document.getElementById('profile-rating-badge');
+    if (badge) {
+        if (ratingCount > 0) {
+            badge.textContent = `${avgRating}★`;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
     }
 }
 
@@ -299,21 +368,51 @@ export function listenForTasks() {
         snapshot.forEach((doc) => {
             const task = doc.data();
             task.id = doc.id;
+
+            // Auto-Cleanup: Filter out open tasks > 24 hours
+            if (task.status === 'open' && isOlderThan24h(task.createdAt, doc.id)) {
+                // If we are strictly following logic, we trigger delete and don't add to list
+                console.log("Auto-cleaning task", task.id);
+                // Return here so it doesn't show in UI
+                return;
+            }
+
             allTasks.push(task);
         });
 
         updateMarkers();
-        if (!myTasksPage.classList.contains('hidden')) {
-            renderMyTasks();
-        }
 
-        // Also update profile rating display if needed
+        const myTasksHidden = myTasksPage.classList.contains('hidden');
+        const profileHidden = profilePage.classList.contains('hidden');
+
+        if (!myTasksHidden) renderMyTasks();
+        if (!profileHidden) renderProfile();
+
+        // Also update header avatar if needed
         const user = auth.currentUser;
-        if (user) updateUserProfileRating(user);
+        // if(user) updateUserProfileRating(user); // Optimization: renderProfile handles this now when visible
 
     }, (error) => {
         console.error("Firestore Error:", error);
     });
+}
+
+function isOlderThan24h(timestamp, docId) {
+    if (!timestamp) return false;
+    const now = new Date();
+    // Firestore timestamp to date
+    const taskDate = timestamp.toDate();
+    const diffMs = now - taskDate;
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    if (diffHours >= 24) {
+        // Trigger Delete
+        // Ensure we don't spam deletes if multiple clients watch? 
+        // Firestore rules or logic usually handles this, but for this app it's fine.
+        deleteDoc(doc(db, "tasks", docId)).catch(err => console.log("Cleanup error:", err));
+        return true;
+    }
+    return false;
 }
 
 function updateMarkers() {
@@ -355,7 +454,7 @@ function renderMyTasks() {
         if (myTasksTab === 'posted') {
             return task.poster.id === user.uid;
         } else {
-            return task.assignee && task.assignee.id === user.uid; // Claimed by me
+            return task.assignee && task.assignee.id === user.uid;
         }
     });
 
@@ -433,7 +532,7 @@ function openTaskDetail(task, dist) {
     deleteBtn.classList.add('hidden');
     claimBtn.disabled = false;
     claimBtn.textContent = "I'll do it!";
-    claimBtn.onclick = null; // Clear old listeners
+    claimBtn.onclick = null;
     deleteBtn.onclick = null;
 
     if (user && task.poster.id === user.uid) {
@@ -446,7 +545,6 @@ function openTaskDetail(task, dist) {
             }
         };
 
-        // If pending confirmation, show Confirm button instead of delete (or alongside)
         if (task.status === 'pending-confirmation') {
             claimBtn.classList.remove('hidden');
             claimBtn.textContent = "Confirm & Rate";
@@ -459,7 +557,6 @@ function openTaskDetail(task, dist) {
                 if (ratingModal.querySelector('#rating-modal-backdrop')) {
                     ratingModal.querySelector('#rating-modal-backdrop').classList.remove('opacity-0');
                 }
-                // Hide detail modal to focus on rating
                 document.getElementById('detail-modal-content').classList.add('translate-y-full');
                 setTimeout(() => detailModal.classList.add('hidden'), 300);
             };
@@ -490,7 +587,6 @@ function openTaskDetail(task, dist) {
             };
 
         } else if (task.status === 'in-progress' && task.assignee?.id === user?.uid) {
-            // I am the assignee
             claimBtn.classList.remove('hidden');
             claimBtn.textContent = "Mark as Done";
 
@@ -521,52 +617,4 @@ function timeAgo(firebaseTimestamp) {
     // ... simple implementation or use a library
     return Math.floor(seconds / 60) + " min ago";
 }
-
-// Helper to calc avg rating
-async function updateUserProfileRating(user) {
-    const q = query(
-        collection(db, "tasks"),
-        where("assignee.id", "==", user.uid),
-        where("status", "==", "completed")
-    );
-    // Note: This requires index on assignee.id + status. Simple query should work.
-
-    // We can't actually update the profile directly in Firebase Auth easily (custom claims).
-    // We will just calc locally for display in the avatar or header.
-    // For now, let's just log it or update the UI element if we had one.
-    // Requirement: "result should be showed on the i profi;e"
-
-    // Let's hijack the avatar text for now to show "4.5★"
-    try {
-        const snapshot = await getDocs(q);
-        let total = 0;
-        let count = 0;
-        snapshot.forEach(d => {
-            const data = d.data();
-            if (data.rating) {
-                total += data.rating;
-                count++;
-            }
-        });
-
-        if (count > 0) {
-            const avg = (total / count).toFixed(1);
-            const avatar = document.getElementById('user-avatar');
-            if (avatar) {
-                // Creating a small floating badge
-                // Check if badge exists
-                let badge = document.getElementById('rating-badge');
-                if (!badge) {
-                    badge = document.createElement('div');
-                    badge.id = 'rating-badge';
-                    badge.className = 'absolute -bottom-1 -right-1 bg-yellow-400 text-white text-[10px] px-1 rounded-full font-bold shadow-sm';
-                    avatar.parentElement.style.position = 'relative'; // ensure parent is relative
-                    avatar.parentElement.appendChild(badge);
-                }
-                badge.textContent = `${avg}★`;
-            }
-        }
-    } catch (e) {
-        console.log("Rating calc error (likely index missing):", e);
-    }
-}
+// Removed outdated updateUserProfileRating in favor of real-time calc in renderProfile logic
