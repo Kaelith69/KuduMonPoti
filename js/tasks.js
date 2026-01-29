@@ -13,18 +13,22 @@ import {
     where,
     getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { addMarker, getMapCenter, calculateDistance, clearMarkers, onUserLocationUpdate } from './map.js';
 
 // Modals
 const createModal = document.getElementById('create-modal');
 const detailModal = document.getElementById('task-detail-modal');
 const ratingModal = document.getElementById('rating-modal');
+const editProfileModal = document.getElementById('edit-profile-modal');
 
 // Buttons & Forms
 const fab = document.getElementById('fab-add-task');
-const closeModalBtns = document.querySelectorAll('#create-modal-backdrop, #detail-modal-backdrop, #rating-modal-backdrop, #cancel-create, #cancel-rating-btn');
+const closeModalBtns = document.querySelectorAll('#create-modal-backdrop, #detail-modal-backdrop, #rating-modal-backdrop, #edit-profile-backdrop, #cancel-create, #cancel-rating-btn, #cancel-edit-profile');
 const createTaskForm = document.getElementById('create-task-form');
 const submitRatingBtn = document.getElementById('submit-rating-btn');
+const editProfileBtn = document.getElementById('edit-profile-btn');
+const saveProfileBtn = document.getElementById('save-profile-btn');
 
 // Elements for Filters & Search
 const filterContainer = document.getElementById('filter-container');
@@ -90,12 +94,60 @@ function closeModals() {
     const ratingBackdrop = document.getElementById('rating-modal-backdrop');
     if (ratingBackdrop) ratingBackdrop.classList.add('opacity-0');
 
+    // Edit Profile Modal
+    const editBackdrop = document.getElementById('edit-profile-backdrop');
+    if (editBackdrop) editBackdrop.classList.add('opacity-0');
+
     setTimeout(() => {
         createModal.classList.add('hidden');
         if (detailModal) detailModal.classList.add('hidden');
         if (detailContent) detailContent.classList.add('translate-y-full');
         if (ratingModal) ratingModal.classList.add('hidden');
+        if (editProfileModal) editProfileModal.classList.add('hidden');
     }, 300);
+}
+
+// Edit Profile Logic
+if (editProfileBtn) {
+    editProfileBtn.addEventListener('click', () => {
+        const user = auth.currentUser;
+        if (!user) return;
+        document.getElementById('edit-name-input').value = user.displayName || "";
+
+        editProfileModal.classList.remove('hidden');
+        setTimeout(() => {
+            document.getElementById('edit-profile-backdrop').classList.remove('opacity-0');
+        }, 10);
+    });
+}
+
+if (saveProfileBtn) {
+    saveProfileBtn.addEventListener('click', async () => {
+        const newName = document.getElementById('edit-name-input').value.trim();
+        const user = auth.currentUser;
+        if (!user || !newName) return;
+
+        saveProfileBtn.textContent = "Saving...";
+        saveProfileBtn.disabled = true;
+
+        try {
+            await updateProfile(user, { displayName: newName });
+
+            // Update UI
+            document.getElementById('profile-name').textContent = newName;
+
+            // Re-render to ensure consistency
+            renderProfile();
+
+            closeModals();
+        } catch (e) {
+            console.error(e);
+            alert("Failed to update profile: " + e.message);
+        } finally {
+            saveProfileBtn.textContent = "Save";
+            saveProfileBtn.disabled = false;
+        }
+    });
 }
 
 // Rating Modal Logic
@@ -371,9 +423,7 @@ export function listenForTasks() {
 
             // Auto-Cleanup: Filter out open tasks > 24 hours
             if (task.status === 'open' && isOlderThan24h(task.createdAt, doc.id)) {
-                // If we are strictly following logic, we trigger delete and don't add to list
                 console.log("Auto-cleaning task", task.id);
-                // Return here so it doesn't show in UI
                 return;
             }
 
@@ -387,10 +437,6 @@ export function listenForTasks() {
 
         if (!myTasksHidden) renderMyTasks();
         if (!profileHidden) renderProfile();
-
-        // Also update header avatar if needed
-        const user = auth.currentUser;
-        // if(user) updateUserProfileRating(user); // Optimization: renderProfile handles this now when visible
 
     }, (error) => {
         console.error("Firestore Error:", error);
@@ -406,9 +452,6 @@ function isOlderThan24h(timestamp, docId) {
     const diffHours = diffMs / (1000 * 60 * 60);
 
     if (diffHours >= 24) {
-        // Trigger Delete
-        // Ensure we don't spam deletes if multiple clients watch? 
-        // Firestore rules or logic usually handles this, but for this app it's fine.
         deleteDoc(doc(db, "tasks", docId)).catch(err => console.log("Cleanup error:", err));
         return true;
     }
@@ -617,4 +660,3 @@ function timeAgo(firebaseTimestamp) {
     // ... simple implementation or use a library
     return Math.floor(seconds / 60) + " min ago";
 }
-// Removed outdated updateUserProfileRating in favor of real-time calc in renderProfile logic
