@@ -214,7 +214,7 @@ if (createTaskForm) {
 
         } catch (error) {
             console.error("Error adding task: ", error);
-            alert("Failed to post task.");
+            alert("Failed to post task: " + error.message);
         } finally {
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;

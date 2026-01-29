@@ -1,7 +1,7 @@
 // js/app.js
 import { auth } from './firebase-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { initMap } from './map.js';
+import { initMap, flyToUserLocation } from './map.js';
 import { listenForTasks } from './tasks.js';
 
 // DOM Elements
@@ -9,10 +9,18 @@ const loadingScreen = document.getElementById('loading-screen');
 const authPage = document.getElementById('auth-page');
 const appPage = document.getElementById('app-page-map');
 const logoutBtn = document.getElementById('logout-btn');
+const locateBtn = document.getElementById('locate-btn');
 
 // Initialize App
 function init() {
     console.log("Initializing TaskPop...");
+
+    // UI Listeners
+    if (locateBtn) {
+        locateBtn.addEventListener('click', () => {
+            flyToUserLocation();
+        });
+    }
 
     // Auth Listener
     onAuthStateChanged(auth, (user) => {

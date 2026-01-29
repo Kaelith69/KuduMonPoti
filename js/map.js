@@ -171,3 +171,14 @@ export function calculateDistance(lat1, lon1, lat2, lon2) {
 function deg2rad(deg) {
     return deg * (Math.PI / 180);
 }
+
+export function flyToUserLocation() {
+    if (map && currentUserLocation) {
+        map.flyTo({
+            center: [currentUserLocation.lng, currentUserLocation.lat],
+            zoom: 15
+        });
+    } else {
+        alert("User location not available yet.");
+    }
+}
