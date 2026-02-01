@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
     <title>TaskPop</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,6 +19,19 @@
                     },
                     fontFamily: {
                         sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                    },
+                    height: {
+                        screen: '100svh', // Override h-screen to use svh (Small Viewport Height) for better mobile support
+                    },
+                    padding: {
+                        'safe-top': 'env(safe-area-inset-top)',
+                        'safe-bottom': 'env(safe-area-inset-bottom)',
+                        'safe-left': 'env(safe-area-inset-left)',
+                        'safe-right': 'env(safe-area-inset-right)',
+                    },
+                    margin: {
+                        'safe-top': 'env(safe-area-inset-top)',
+                        'safe-bottom': 'env(safe-area-inset-bottom)',
                     }
                 }
             }
@@ -106,7 +119,7 @@
 
     <!-- My Tasks Page -->
     <div id="my-tasks-page"
-        class="hidden fixed inset-0 z-0 bg-background flex flex-col pt-4 pb-24 px-4 overflow-y-auto">
+        class="hidden fixed inset-0 z-0 bg-background flex flex-col pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))] px-4 overflow-y-auto md:z-20 md:inset-y-6 md:right-6 md:left-auto md:w-[450px] md:rounded-3xl md:shadow-2xl md:border md:border-white/20 md:pb-6 md:pt-6">
         <h1 class="text-3xl font-bold mb-6 mt-8 px-2">My Tasks</h1>
 
         <div class="flex gap-4 mb-6 px-2">
@@ -124,7 +137,7 @@
 
     <!-- Profile Page -->
     <div id="profile-page"
-        class="hidden fixed inset-0 z-0 bg-background flex flex-col pt-10 pb-24 px-6 overflow-y-auto">
+        class="hidden fixed inset-0 z-0 bg-background flex flex-col pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(6rem+env(safe-area-inset-bottom))] px-6 overflow-y-auto md:z-20 md:inset-y-6 md:right-6 md:left-auto md:w-[450px] md:rounded-3xl md:shadow-2xl md:border md:border-white/20 md:pb-6 md:pt-8">
 
         <div class="flex flex-col items-center mb-8">
             <div
@@ -199,7 +212,8 @@
         <div id="map" class="absolute inset-0 w-full h-full"></div>
 
         <!-- Header / Search -->
-        <div class="absolute top-4 left-4 right-4 z-10 flex gap-3 pointer-events-none">
+        <div
+            class="absolute top-[calc(1rem+env(safe-area-inset-top))] left-4 right-4 z-10 flex gap-3 pointer-events-none md:left-28 md:right-auto md:w-96 md:top-6">
             <div
                 class="flex-1 bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/20 pointer-events-auto flex items-center px-4 py-3">
                 <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,7 +226,8 @@
         </div>
 
         <!-- Filter Bar -->
-        <div class="absolute top-20 left-4 right-4 z-10 overflow-x-auto pb-2 pointer-events-none">
+        <div
+            class="absolute top-[calc(5rem+env(safe-area-inset-top))] left-4 right-4 z-10 overflow-x-auto pb-2 pointer-events-none md:left-28 md:right-auto md:w-auto md:top-24">
             <div class="flex gap-2 pointer-events-auto" id="filter-container">
                 <button data-filter="all"
                     class="filter-chip active bg-primary text-white px-4 py-2 rounded-full shadow-md text-sm font-medium transition-all">All</button>
@@ -227,7 +242,7 @@
 
         <!-- Locate Me Button -->
         <button id="locate-btn"
-            class="absolute bottom-40 right-6 z-20 w-12 h-12 bg-white text-gray-700 rounded-full shadow-lg border border-gray-200 flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95">
+            class="absolute bottom-[calc(10rem+env(safe-area-inset-bottom))] right-6 z-20 w-12 h-12 bg-white text-gray-700 rounded-full shadow-lg border border-gray-200 flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95 md:right-12 md:bottom-12">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
@@ -238,7 +253,7 @@
 
         <!-- FAB (Add Task) -->
         <button id="fab-add-task"
-            class="absolute bottom-24 right-6 z-20 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/40 flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95">
+            class="absolute bottom-[calc(6rem+env(safe-area-inset-bottom))] right-6 z-20 w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/40 flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95 md:right-28 md:bottom-10">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6">
                 </path>
@@ -247,8 +262,10 @@
     </div>
 
     <!-- Bottom Navigation -->
-    <div class="fixed bottom-6 left-6 right-6 z-20">
-        <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 flex justify-around p-3">
+    <div
+        class="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-6 right-6 z-20 md:left-6 md:top-1/2 md:-translate-y-1/2 md:bottom-auto md:w-20 md:flex-col md:h-auto md:py-6 md:rounded-full md:right-auto">
+        <div
+            class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 flex justify-around p-3 md:flex-col md:gap-8 md:p-4 md:items-center md:rounded-full md:border-none md:shadow-xl md:bg-white/90">
             <button id="nav-explore"
                 class="nav-item active text-primary flex flex-col items-center gap-1 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,7 +297,7 @@
     <div id="create-modal" class="hidden fixed inset-0 z-30 pointer-events-none">
         <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity opacity-0 pointer-events-auto"
             id="create-modal-backdrop"></div>
-        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto"
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto md:inset-0 md:m-auto md:w-[500px] md:h-fit md:rounded-3xl md:translate-y-0 md:shadow-2xl"
             id="create-modal-content">
             <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
             <h2 class="text-xl font-bold mb-4">Post a Task</h2>
@@ -330,7 +347,7 @@
     <!-- Task Details Modal (Similar to Create, but for viewing) -->
     <div id="task-detail-modal" class="hidden fixed inset-0 z-30 pointer-events-none">
         <div class="absolute inset-0 bg-black/20 backdrop-blur-sm pointer-events-auto" id="detail-modal-backdrop"></div>
-        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto"
+        <div class="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl transform translate-y-full transition-transform duration-300 pointer-events-auto md:inset-0 md:m-auto md:w-[500px] md:h-fit md:rounded-3xl md:translate-y-0 md:shadow-2xl"
             id="detail-modal-content">
             <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
 

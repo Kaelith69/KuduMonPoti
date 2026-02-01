@@ -1,8 +1,39 @@
 /* styles/main.css */
 
 /* MapLibre Canvas base */
+/* MapLibre Canvas base */
 .maplibregl-map {
     font-family: inherit;
+    /* Prevent pull-to-refresh on mobile maps */
+    touch-action: none; 
+}
+
+/* Cross-browser Scrollbar Styling */
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent; /* scrollbar thumb and track */
+}
+
+/* Chrome, Edge, Safari */
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 20px;
+    border: 2px solid transparent; /* adds padding effect */
+    background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
 }
 
 /* Glassmorphism Utilities (Tailwind handles most, but specific overrides here) */
