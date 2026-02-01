@@ -11,7 +11,9 @@ import {
     query,
     orderBy,
     where,
-    getDocs
+    getDocs,
+    runTransaction,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { addMarker, getMapCenter, calculateDistance, clearMarkers, onUserLocationUpdate } from './map.js';
@@ -63,9 +65,40 @@ onUserLocationUpdate((loc) => {
     updateMarkers();
 });
 
+let userUnsubscribe = null;
+
+export function listenToUser(userId) {
+    if (userUnsubscribe) userUnsubscribe();
+
+    userUnsubscribe = onSnapshot(doc(db, "users", userId), (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            const balance = data.balance || 0;
+
+            // Update Profile UI
+            const balanceEl = document.getElementById('profile-wallet-balance');
+            if (balanceEl) balanceEl.textContent = `₹${balance.toFixed(2)}`;
+
+            // Update Create Modal UI
+            const createBalanceEl = document.getElementById('create-task-balance');
+            if (createBalanceEl) createBalanceEl.textContent = `₹${balance}`;
+        }
+    });
+}
+
 // UI Logic
 if (fab) {
     fab.addEventListener('click', () => {
+        // Update balance in modal
+        const user = auth.currentUser;
+        if (user) {
+            getDoc(doc(db, "users", user.uid)).then(snap => {
+                if (snap.exists()) {
+                    document.getElementById('create-task-balance').textContent = `₹${snap.data().balance}`;
+                }
+            });
+        }
+
         createModal.classList.remove('hidden');
         setTimeout(() => {
             document.getElementById('create-modal-backdrop').classList.remove('opacity-0');
@@ -190,10 +223,37 @@ if (submitRatingBtn) {
         submitRatingBtn.disabled = true;
 
         try {
-            await updateDoc(doc(db, "tasks", currentRatingTask.id), {
-                status: "completed",
-                rating: currentRatingValue,
-                completedAt: serverTimestamp()
+            await runTransaction(db, async (transaction) => {
+                const taskRef = doc(db, "tasks", currentRatingTask.id);
+                const taskSnap = await transaction.get(taskRef);
+                if (!taskSnap.exists()) throw new Error("Task not found");
+
+                const taskData = taskSnap.data();
+                if (taskData.status === 'completed') throw new Error("Task already completed");
+
+                // Credit Assignee
+                const assigneeId = taskData.assignee.id;
+                const assigneeRef = doc(db, "users", assigneeId);
+                const assigneeSnap = await transaction.get(assigneeRef);
+
+                if (assigneeSnap.exists()) {
+                    const currentBal = assigneeSnap.data().balance || 0;
+                    const reward = taskData.reward.amount || 0;
+                    transaction.update(assigneeRef, { balance: currentBal + reward });
+                } else {
+                    // Fallback if assignee has no wallet doc yet (create it)
+                    transaction.set(assigneeRef, {
+                        balance: taskData.reward.amount || 0,
+                        email: "unknown", // can't get this easily here, but balance is key
+                        createdAt: serverTimestamp()
+                    });
+                }
+
+                transaction.update(taskRef, {
+                    status: "completed",
+                    rating: currentRatingValue,
+                    completedAt: serverTimestamp()
+                });
             });
             alert("Thanks for rating!");
             closeModals();
@@ -277,7 +337,7 @@ function switchView(view) {
     }
 }
 
-function renderProfile() {
+async function renderProfile() {
     const user = auth.currentUser;
     if (!user) return;
 
@@ -316,6 +376,26 @@ function renderProfile() {
     document.getElementById('stat-posted').textContent = postedCount;
     document.getElementById('stat-completed').textContent = completedCount;
     document.getElementById('stat-rating').textContent = avgRating;
+
+    // Verify User Doc & Balance
+    const userDocRef = doc(db, "users", user.uid);
+    let userBalance = 0;
+
+    try {
+        const userSnapshot = await getDoc(userDocRef);
+        if (userSnapshot.exists()) {
+            userBalance = userSnapshot.data().balance || 0;
+        } else {
+            // Initialize for existing users (Demo)
+            userBalance = 0;
+            // Optional: Create doc if missing? For now just read 0.
+        }
+    } catch (e) {
+        console.error("Error fetching balance:", e);
+    }
+
+    const balanceEl = document.getElementById('profile-wallet-balance');
+    if (balanceEl) balanceEl.textContent = `₹${userBalance.toFixed(2)}`;
 
     // Update badge on profile page
     const badge = document.getElementById('profile-rating-badge');
@@ -383,19 +463,39 @@ if (createTaskForm) {
         }
 
         try {
-            await addDoc(collection(db, "tasks"), {
-                title,
-                category,
-                reward: { amount: parseFloat(reward) || 0, currency: "GBP" },
-                description: desc,
-                location: { lat: center.lat, lng: center.lng },
-                status: "open",
-                poster: {
-                    id: user.uid,
-                    name: user.displayName || user.email,
-                    avatar: user.photoURL || ""
-                },
-                createdAt: serverTimestamp()
+            await runTransaction(db, async (transaction) => {
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await transaction.get(userDocRef);
+
+                if (!userDoc.exists()) {
+                    throw new Error("User wallet not found");
+                }
+
+                const currentBalance = userDoc.data().balance || 0;
+                const rewardAmount = parseFloat(reward) || 0;
+
+                if (currentBalance < rewardAmount) {
+                    throw new Error(`Insufficient funds. You have ₹${currentBalance} but reward is ₹${rewardAmount}`);
+                }
+
+                const newBalance = currentBalance - rewardAmount;
+                transaction.update(userDocRef, { balance: newBalance });
+
+                const newTaskRef = doc(collection(db, "tasks"));
+                transaction.set(newTaskRef, {
+                    title,
+                    category,
+                    reward: { amount: rewardAmount, currency: "INR" },
+                    description: desc,
+                    location: { lat: center.lat, lng: center.lng },
+                    status: "open",
+                    poster: {
+                        id: user.uid,
+                        name: user.displayName || user.email,
+                        avatar: user.photoURL || ""
+                    },
+                    createdAt: serverTimestamp()
+                });
             });
 
             closeModals();
@@ -521,7 +621,7 @@ function renderMyTasks() {
             </div>
             <div class="flex-1">
                 <h3 class="font-bold text-gray-900">${task.title}</h3>
-                <p class="text-sm ${statusColor}">${taskStatusLabel(task.status)} • £${task.reward.amount}</p>
+                <p class="text-sm ${statusColor}">${taskStatusLabel(task.status)} • ₹${task.reward.amount}</p>
                 ${task.rating ? `<p class="text-xs text-yellow-500">★ ${task.rating}/5</p>` : ''}
             </div>
             <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium">View</button>
@@ -564,7 +664,7 @@ function openTaskDetail(task, dist) {
     document.getElementById('detail-time-dist').textContent = `${timeString} • ${dist.toFixed(2)} km away`;
 
     document.getElementById('detail-poster-name').textContent = task.poster.name;
-    document.getElementById('detail-price').textContent = `£${task.reward.amount}`;
+    document.getElementById('detail-price').textContent = `₹${task.reward.amount}`;
 
     const claimBtn = document.getElementById('claim-btn');
     const deleteBtn = document.getElementById('delete-btn');
@@ -582,9 +682,32 @@ function openTaskDetail(task, dist) {
         // I am the POSTER
         deleteBtn.classList.remove('hidden');
         deleteBtn.onclick = async () => {
-            if (confirm("Delete this task?")) {
-                await deleteDoc(doc(db, "tasks", task.id));
-                closeModals();
+            if (confirm("Delete this task? Costs will be refunded.")) {
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const taskRef = doc(db, "tasks", task.id);
+                        const taskSnap = await transaction.get(taskRef);
+                        if (!taskSnap.exists()) throw new Error("Task not found");
+
+                        // Refund Poster
+                        const posterId = taskSnap.data().poster.id;
+                        const userRef = doc(db, "users", posterId);
+                        const userSnap = await transaction.get(userRef);
+
+                        if (userSnap.exists()) {
+                            const currentBal = userSnap.data().balance || 0;
+                            const reward = taskSnap.data().reward.amount || 0;
+                            transaction.update(userRef, { balance: currentBal + reward });
+                        }
+
+                        transaction.delete(taskRef);
+                    });
+
+                    closeModals();
+                } catch (e) {
+                    console.error(e);
+                    alert("Delete failed: " + e.message);
+                }
             }
         };
 

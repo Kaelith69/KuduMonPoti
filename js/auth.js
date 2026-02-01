@@ -6,6 +6,8 @@ import {
     signOut,
     updateProfile
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { db } from './firebase-config.js';
 
 const loginForm = document.getElementById('login-form');
 const signupForm = document.getElementById('signup-form');
@@ -57,10 +59,21 @@ if (signupForm) {
 
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            // Update Profile with Name
-            await updateProfile(userCredential.user, {
+            const user = userCredential.user;
+
+            // Update Auth Profile
+            await updateProfile(user, {
                 displayName: name
             });
+
+            // specific: Create User Doc with Wallet Balance (Demo Money)
+            await setDoc(doc(db, "users", user.uid), {
+                email: email,
+                name: name,
+                balance: 100, // Initial demo balance
+                createdAt: new Date()
+            });
+
             // Auth listener in app.js will handle redirect
         } catch (error) {
             showError(error.message);

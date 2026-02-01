@@ -2,7 +2,7 @@
 import { auth } from './firebase-config.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { initMap, flyToUserLocation } from './map.js';
-import { listenForTasks } from './tasks.js';
+import { listenForTasks, listenToUser } from './tasks.js';
 
 // DOM Elements
 const loadingScreen = document.getElementById('loading-screen');
@@ -64,6 +64,7 @@ function showApp(user) {
     // Initialize Map if not already done
     initMap(user);
     listenForTasks(); // Start real-time listener
+    listenToUser(user.uid); // Start real-time user listener
 }
 
 // Start
