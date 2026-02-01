@@ -51,7 +51,7 @@ Built with love and caffeine. ☕
 
 1.  **Steal the Code** (Clone it)
     ```bash
-    git clone https://github.com/yourusername/taskpop.git
+    git clone https://github.com/Kaelith69/taskpop.git
     cd taskpop
     ```
     *Hacker voice: "I'm in."* 🕶️
@@ -111,4 +111,4 @@ Currently, our Firestore rules are basically "Come on in, the door is unlocked."
 MIT License. Do whatever you want. Just don't blame us if your toaster explodes.
 
 ---
-*Made with 💻 and 🍕 by [Your Name]*
+*Made with 💻 and 🍕 by Kaelith69*
