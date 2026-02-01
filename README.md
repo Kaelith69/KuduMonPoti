@@ -1,8 +1,8 @@
-# TaskPop 🚀🌕
+# SideQuest 🚀🌕
 
 > "Stonks only go up." - *Warren Buffett (probably)*
 
-**TaskPop** is the app you didn't know you needed until you realized you're too lazy to walk your dog or get groceries. It's a hyper-local, real-time marketplace that connects you with neighbors who will do your chores for sweet, sweet Rupee (₹).
+**SideQuest** is the app you didn't know you needed until you realized you're too lazy to walk your dog or get groceries. It's a hyper-local, real-time marketplace that connects you with neighbors who will do your chores for sweet, sweet Rupee (₹).
 
 Think of it as IRL side-quests. 🎮
 
@@ -13,10 +13,10 @@ Think of it as IRL side-quests. 🎮
 
 ## 🧐 What dis?
 
-One does not simply *get things done*. That's why we built TaskPop.
+One does not simply *get things done*. That's why we built SideQuest.
 - **You**: Have money (₹), no time/energy.
 - **Neighbor**: Has time/energy, wants money (₹).
-- **TaskPop**: *Now kith.* 🤝
+- **SideQuest**: *Now kith.* 🤝
 
 We use a fancy **Interactive Map** so you can see exactly where the help is coming from (creepy? maybe. useful? absolutely).
 
@@ -51,8 +51,8 @@ Built with love and caffeine. ☕
 
 1.  **Steal the Code** (Clone it)
     ```bash
-    git clone https://github.com/Kaelith69/taskpop.git
-    cd taskpop
+    git clone https://github.com/Kaelith69/sidequest.git
+    cd sidequest
     ```
     *Hacker voice: "I'm in."* 🕶️
 
@@ -91,7 +91,7 @@ Built with love and caffeine. ☕
 
 ## 📂 Structure
 ```
-taskpop/
+sidequest/
 ├── index.html          # Where the magic starts
 ├── styles/             # Making things look pretty
 ├── js/                 # The big brain logic 🧠

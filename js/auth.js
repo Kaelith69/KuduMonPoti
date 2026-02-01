@@ -23,7 +23,7 @@ if (toggleAuthBtn) {
         if (isLoginMode) {
             loginForm.classList.remove('hidden');
             signupForm.classList.add('hidden');
-            toggleAuthBtn.textContent = 'New to TaskPop? Sign Up';
+            toggleAuthBtn.textContent = 'New to SideQuest? Sign Up';
         } else {
             loginForm.classList.add('hidden');
             signupForm.classList.remove('hidden');

@@ -13,7 +13,7 @@ const locateBtn = document.getElementById('locate-btn');
 
 // Initialize App
 function init() {
-    console.log("Initializing TaskPop...");
+    console.log("Initializing SideQuest...");
 
     // UI Listeners
     if (locateBtn) {
