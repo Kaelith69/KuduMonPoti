@@ -179,6 +179,8 @@ export function flyToUserLocation() {
             zoom: 15
         });
     } else {
-        alert("User location not available yet.");
+        showToast("User location not available yet.", 'info');
     }
 }
+
+import { showToast } from './ui.js';

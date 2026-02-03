@@ -17,6 +17,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { addMarker, getMapCenter, calculateDistance, clearMarkers, onUserLocationUpdate } from './map.js';
+import { showToast, showConfirm } from './ui.js';
 
 // Modals
 const createModal = document.getElementById('create-modal');
@@ -175,7 +176,7 @@ if (saveProfileBtn) {
             closeModals();
         } catch (e) {
             console.error(e);
-            alert("Failed to update profile: " + e.message);
+            showToast("Failed to update profile: " + e.message, 'error');
         } finally {
             saveProfileBtn.textContent = "Save";
             saveProfileBtn.disabled = false;
@@ -255,11 +256,11 @@ if (submitRatingBtn) {
                     completedAt: serverTimestamp()
                 });
             });
-            alert("Thanks for rating!");
+            showToast("Thanks for rating!", 'success');
             closeModals();
         } catch (e) {
             console.error(e);
-            alert("Error submitting rating");
+            showToast("Error submitting rating", 'error');
         } finally {
             submitRatingBtn.textContent = "Confirm & Rate";
             submitRatingBtn.disabled = false;
@@ -456,7 +457,7 @@ if (createTaskForm) {
 
         const user = auth.currentUser;
         if (!user) {
-            alert("Must be logged in");
+            showToast("Must be logged in", 'error');
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
             return;
@@ -503,7 +504,7 @@ if (createTaskForm) {
 
         } catch (error) {
             console.error("Error adding task: ", error);
-            alert("Failed to post task: " + error.message);
+            showToast("Failed to post task: " + error.message, 'error');
         } finally {
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
@@ -621,7 +622,7 @@ function renderMyTasks() {
             </div>
             <div class="flex-1">
                 <h3 class="font-bold text-gray-900">${task.title}</h3>
-                <p class="text-sm ${statusColor}">${taskStatusLabel(task.status)} • ₹${task.reward.amount}</p>
+                <p class="text-sm ${statusColor}">${taskStatusLabel(task.status)} • ${task.reward.amount > 0 ? `₹${task.reward.amount}` : '<span class="text-green-600 font-medium">Volunteer</span>'}</p>
                 ${task.rating ? `<p class="text-xs text-yellow-500">★ ${task.rating}/5</p>` : ''}
             </div>
             <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium">View</button>
@@ -664,7 +665,15 @@ function openTaskDetail(task, dist) {
     document.getElementById('detail-time-dist').textContent = `${timeString} • ${dist.toFixed(2)} km away`;
 
     document.getElementById('detail-poster-name').textContent = task.poster.name;
-    document.getElementById('detail-price').textContent = `₹${task.reward.amount}`;
+    document.getElementById('detail-poster-name').textContent = task.poster.name;
+    const priceEl = document.getElementById('detail-price');
+    if (task.reward.amount > 0) {
+        priceEl.textContent = `₹${task.reward.amount}`;
+        priceEl.className = "bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold";
+    } else {
+        priceEl.textContent = "Volunteer";
+        priceEl.className = "bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold";
+    }
 
     const claimBtn = document.getElementById('claim-btn');
     const deleteBtn = document.getElementById('delete-btn');
@@ -682,7 +691,7 @@ function openTaskDetail(task, dist) {
         // I am the POSTER
         deleteBtn.classList.remove('hidden');
         deleteBtn.onclick = async () => {
-            if (confirm("Delete this task? Costs will be refunded.")) {
+            showConfirm("Delete Task?", "Costs will be refunded.", async () => {
                 try {
                     await runTransaction(db, async (transaction) => {
                         const taskRef = doc(db, "tasks", task.id);
@@ -704,11 +713,12 @@ function openTaskDetail(task, dist) {
                     });
 
                     closeModals();
+                    showToast("Task deleted & refunded", 'success');
                 } catch (e) {
                     console.error(e);
-                    alert("Delete failed: " + e.message);
+                    showToast("Delete failed: " + e.message, 'error');
                 }
-            }
+            });
         };
 
         if (task.status === 'pending-confirmation') {
@@ -736,7 +746,7 @@ function openTaskDetail(task, dist) {
             claimBtn.textContent = "I'll do it!";
 
             claimBtn.onclick = async () => {
-                if (!user) { alert("Please login."); return; }
+                if (!user) { showToast("Please login.", 'error'); return; }
                 claimBtn.textContent = "Claiming...";
                 claimBtn.disabled = true;
                 try {
@@ -746,7 +756,7 @@ function openTaskDetail(task, dist) {
                     });
                     closeModals();
                 } catch (e) {
-                    alert("Claim failed: " + e.message);
+                    showToast("Claim failed: " + e.message, 'error');
                     claimBtn.disabled = false;
                     claimBtn.textContent = "I'll do it!";
                 }
@@ -759,9 +769,9 @@ function openTaskDetail(task, dist) {
             claimBtn.onclick = async () => {
                 try {
                     await updateDoc(doc(db, "tasks", task.id), { status: "pending-confirmation" });
-                    alert("Marked as done! Wait for poster to confirm.");
+                    showToast("Marked as done! Wait for poster to confirm.", 'success');
                     closeModals();
-                } catch (e) { alert("Error: " + e.message); }
+                } catch (e) { showToast("Error: " + e.message, 'error'); }
             };
         } else if (task.status === 'pending-confirmation' && task.assignee?.id === user?.uid) {
             claimBtn.classList.remove('hidden');

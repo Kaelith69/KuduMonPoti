@@ -70,7 +70,7 @@ if (signupForm) {
             await setDoc(doc(db, "users", user.uid), {
                 email: email,
                 name: name,
-                balance: 100, // Initial demo balance
+                balance: 500, // Initial demo balance
                 createdAt: new Date()
             });
 
