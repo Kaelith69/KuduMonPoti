@@ -1,5 +1,4 @@
 # SideQuest 🚀🌕
-# SideQuest  🚀🌕
 
 > "Stonks only go up." - *Warren Buffett (probably)*
 
