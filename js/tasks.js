@@ -382,6 +382,10 @@ async function renderProfile() {
     const userDocRef = doc(db, "users", user.uid);
     let userBalance = 0;
 
+    // Show Loading Skeleton
+    const balanceEl = document.getElementById('profile-wallet-balance');
+    if (balanceEl) balanceEl.innerHTML = '<div class="skeleton h-6 w-20 inline-block"></div>';
+
     try {
         const userSnapshot = await getDoc(userDocRef);
         if (userSnapshot.exists()) {
@@ -395,7 +399,6 @@ async function renderProfile() {
         console.error("Error fetching balance:", e);
     }
 
-    const balanceEl = document.getElementById('profile-wallet-balance');
     if (balanceEl) balanceEl.textContent = `₹${userBalance.toFixed(2)}`;
 
     // Update badge on profile page
@@ -540,6 +543,8 @@ if (createTaskForm) {
 }
 
 // Listen for Tasks
+let isTasksLoaded = false;
+
 export function listenForTasks() {
     const q = query(collection(db, "tasks"), orderBy("createdAt", "desc"));
 
@@ -558,6 +563,7 @@ export function listenForTasks() {
             allTasks.push(task);
         });
 
+        isTasksLoaded = true;
         updateMarkers();
 
         const myTasksHidden = myTasksPage.classList.contains('hidden');
@@ -618,6 +624,17 @@ function renderMyTasks() {
     const user = auth.currentUser;
     if (!user) {
         myTasksList.innerHTML = '<div class="text-center text-gray-500 mt-10">Please login to view tasks.</div>';
+        return;
+    }
+
+    if (!isTasksLoaded) {
+        myTasksList.innerHTML = `
+            <div class="space-y-4 p-4">
+                <div class="skeleton h-20 w-full"></div>
+                <div class="skeleton h-20 w-full"></div>
+                <div class="skeleton h-20 w-full"></div>
+            </div>
+        `;
         return;
     }
 
