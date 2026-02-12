@@ -18,7 +18,8 @@ The synchronization is handled by `.github/workflows/wiki-sync.yml`:
 
 - **Trigger**: Runs on push to `main` branch when wiki files change
 - **Manual Trigger**: Can also be manually triggered via workflow_dispatch
-- **Action Used**: `SwiftDocOrg/github-wiki-publish-action@v1`
+- **Action Used**: `Andrew-Chen-Wang/github-wiki-action@v4`
+- **Authentication**: Uses `GITHUB_TOKEN` automatically (no setup required)
 
 ## Adding or Editing Wiki Pages
 
