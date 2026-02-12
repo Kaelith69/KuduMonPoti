@@ -468,19 +468,46 @@ if (createTaskForm) {
                 const userDocRef = doc(db, "users", user.uid);
                 const userDoc = await transaction.get(userDocRef);
 
-                if (!userDoc.exists()) {
-                    throw new Error("User wallet not found");
+                let currentBalance = 0;
+                let isNewUser = false;
+
+                if (userDoc.exists()) {
+                    currentBalance = userDoc.data().balance || 0;
+                } else {
+                    isNewUser = true;
+                    // Demo wallet creation logic
+                    currentBalance = 500;
                 }
 
-                const currentBalance = userDoc.data().balance || 0;
-                const rewardAmount = parseFloat(reward) || 0;
+                let rewardAmount = 0;
+                if (reward && reward.trim() !== '') {
+                    rewardAmount = parseFloat(reward);
+                }
+
+                if (isNaN(rewardAmount)) {
+                    throw new Error("Invalid reward amount");
+                }
+
+                if (rewardAmount < 0) {
+                    throw new Error("Reward cannot be negative");
+                }
 
                 if (currentBalance < rewardAmount) {
                     throw new Error(`Insufficient funds. You have ₹${currentBalance} but reward is ₹${rewardAmount}`);
                 }
 
                 const newBalance = currentBalance - rewardAmount;
-                transaction.update(userDocRef, { balance: newBalance });
+
+                if (isNewUser) {
+                    transaction.set(userDocRef, {
+                        email: user.email,
+                        name: user.displayName || "User",
+                        balance: newBalance,
+                        createdAt: serverTimestamp()
+                    });
+                } else {
+                    transaction.update(userDocRef, { balance: newBalance });
+                }
 
                 const newTaskRef = doc(collection(db, "tasks"));
                 transaction.set(newTaskRef, {
