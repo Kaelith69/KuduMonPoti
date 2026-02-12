@@ -12,11 +12,25 @@ Think of it as IRL side-quests. 🎮
 ## 📚 [**Read the Complete Wiki**](wiki/Home.md)
 
 For comprehensive documentation, guides, and tutorials, check out our [**detailed wiki**](wiki/Home.md):
+
+### Getting Started
+- 🔧 [Installation Guide](wiki/Installation-Guide.md) - Set up SideQuest locally
 - 📖 [User Guide](wiki/User-Guide.md) - Learn how to use SideQuest
+
+### Developer Documentation
 - 💻 [Development Guide](wiki/Development-Guide.md) - Contribute to the project
-- 🔒 [Security Guide](wiki/Security-Guide.md) - Best practices and security
+- 🏗️ [Technical Architecture](wiki/Technical-Architecture.md) - System design and components
+- 🗄️ [Database Schema](wiki/Database-Schema.md) - Firestore data structure
+- 📚 [API Reference](wiki/API-Reference.md) - Function documentation
+
+### Deployment & Operations
 - 🚀 [Deployment Guide](wiki/Deployment-Guide.md) - Deploy to production
+- 🔒 [Security Guide](wiki/Security-Guide.md) - Security best practices
+
+### Help & Resources
 - ❓ [FAQ](wiki/FAQ.md) - Common questions answered
+- 🔍 [Troubleshooting](wiki/Troubleshooting.md) - Common issues and solutions
+- 🗺️ [Roadmap](wiki/Roadmap.md) - Future plans and features
 
 ---
 
