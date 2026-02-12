@@ -9,6 +9,15 @@ Think of it as IRL side-quests. 🎮
 ![Status: It Works on My Machine](https://img.shields.io/badge/Status-It_Works_On_My_Machine-success?style=for-the-badge)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 
+## 📚 [**Read the Complete Wiki**](wiki/Home.md)
+
+For comprehensive documentation, guides, and tutorials, check out our [**detailed wiki**](wiki/Home.md):
+- 📖 [User Guide](wiki/User-Guide.md) - Learn how to use SideQuest
+- 💻 [Development Guide](wiki/Development-Guide.md) - Contribute to the project
+- 🔒 [Security Guide](wiki/Security-Guide.md) - Best practices and security
+- 🚀 [Deployment Guide](wiki/Deployment-Guide.md) - Deploy to production
+- ❓ [FAQ](wiki/FAQ.md) - Common questions answered
+
 ---
 
 ## 🧐 What dis?
