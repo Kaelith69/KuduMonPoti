@@ -777,15 +777,30 @@ function openTaskDetail(task, dist) {
                 claimBtn.textContent = "Claiming...";
                 claimBtn.disabled = true;
                 try {
-                    await updateDoc(doc(db, "tasks", task.id), {
-                        status: "in-progress",
-                        assignee: { id: user.uid, name: user.displayName || user.email }
+                    await runTransaction(db, async (transaction) => {
+                        const taskRef = doc(db, "tasks", task.id);
+                        const taskDoc = await transaction.get(taskRef);
+                        if (!taskDoc.exists()) throw new Error("Task does not exist!");
+                        if (taskDoc.data().status !== 'open') throw new Error("Task already claimed!");
+
+                        transaction.update(taskRef, {
+                            status: "in-progress",
+                            assignee: {
+                                id: user.uid,
+                                name: user.displayName || user.email
+                            }
+                        });
                     });
                     closeModals();
+                    showToast("Task successfully claimed!", 'success');
                 } catch (e) {
-                    showToast("Claim failed: " + e.message, 'error');
+                    showToast(e.message, 'error');
                     claimBtn.disabled = false;
                     claimBtn.textContent = "I'll do it!";
+                    // Refresh modal if task changed? Ideally close it to force refresh from map
+                    if (e.message.includes("already claimed")) {
+                        setTimeout(closeModals, 1500);
+                    }
                 }
             };
 
