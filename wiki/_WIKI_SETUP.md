@@ -33,7 +33,9 @@ To add or edit wiki pages:
 
 - **File Naming**: Use format like `Page-Name.md` (hyphens for spaces)
 - **Home Page**: `Home.md` becomes the wiki home page
-- **Links**: Use relative links like `[Link Text](Page-Name.md)`
+- **Links**: In wiki files, use links WITHOUT the `.md` extension: `[Link Text](Page-Name)`
+  - Example: `[Home](Home)` not `[Home](Home.md)`
+  - This follows GitHub Wiki conventions
 - **First Sync**: The first time the workflow runs, it will create all wiki pages
 
 ## Viewing the Wiki
