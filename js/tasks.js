@@ -709,7 +709,6 @@ function openTaskDetail(task, dist) {
     document.getElementById('detail-time-dist').textContent = `${timeString} • ${dist.toFixed(2)} km away`;
 
     document.getElementById('detail-poster-name').textContent = task.poster.name;
-    document.getElementById('detail-poster-name').textContent = task.poster.name;
     const priceEl = document.getElementById('detail-price');
     if (task.reward.amount > 0) {
         priceEl.textContent = `₹${task.reward.amount}`;
@@ -772,7 +771,14 @@ function openTaskDetail(task, dist) {
             claimBtn.onclick = () => {
                 currentRatingTask = task;
                 currentRatingValue = 0;
+                // Reset star and button state
                 updateStarsUI(0);
+                if (submitRatingBtn) {
+                    submitRatingBtn.disabled = true;
+                    submitRatingBtn.classList.remove('bg-primary', 'text-white');
+                    submitRatingBtn.classList.add('bg-gray-200', 'text-gray-400');
+                    submitRatingBtn.textContent = "Confirm & Rate";
+                }
                 ratingModal.classList.remove('hidden');
                 if (ratingModal.querySelector('#rating-modal-backdrop')) {
                     ratingModal.querySelector('#rating-modal-backdrop').classList.remove('opacity-0');
@@ -849,6 +855,17 @@ function timeAgo(firebaseTimestamp) {
     if (!firebaseTimestamp) return '';
     const date = firebaseTimestamp.toDate();
     const seconds = Math.floor((new Date() - date) / 1000);
-    // ... simple implementation or use a library
-    return Math.floor(seconds / 60) + " min ago";
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hr ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} day${days !== 1 ? 's' : ''} ago`;
+    const weeks = Math.floor(days / 7);
+    if (weeks < 5) return `${weeks} week${weeks !== 1 ? 's' : ''} ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months} month${months !== 1 ? 's' : ''} ago`;
+    const years = Math.floor(days / 365);
+    return `${years} year${years !== 1 ? 's' : ''} ago`;
 }

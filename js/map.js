@@ -1,7 +1,9 @@
 // js/map.js
-// We assume mapligre-gl is loaded globally via script tag in index.html for simplicity 
+// We assume maplibre-gl is loaded globally via script tag in index.html for simplicity
 // or available as 'maplibregl'
 // Ideally we would import it if we were using a bundler but here we rely on the global.
+
+import { showToast } from './ui.js';
 
 let map;
 let userMarker;
@@ -10,8 +12,6 @@ const defaultLocation = { lng: -0.1276, lat: 51.5074 }; // London (fallback)
 export let currentUserLocation = null;
 let locationListeners = [];
 let taskMarkers = []; // Keep track of markers to clear them
-
-// ... (previous code) ...
 
 // Add this function to allow tasks.js to listen to location updates
 export function onUserLocationUpdate(callback) {
@@ -182,5 +182,3 @@ export function flyToUserLocation() {
         showToast("User location not available yet.", 'info');
     }
 }
-
-import { showToast } from './ui.js';
