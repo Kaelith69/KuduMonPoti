@@ -1,118 +1,92 @@
-# Welcome to the SideQuest Wiki 🚀🌕
+# Welcome to the SideQuest Wiki 🚀
 
-![SideQuest Logo](https://img.shields.io/badge/Status-It_Works_On_My_Machine-success?style=for-the-badge)
-![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
+<div align="center">
 
-**SideQuest** is a hyper-local, real-time marketplace that connects neighbors to help each other with tasks in exchange for rewards (₹). Think of it as IRL side-quests for your neighborhood! 🎮
+[![Version](https://img.shields.io/badge/version-1.0.0-007AFF?style=for-the-badge)](https://github.com/Kaelith69/SideQuest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-5AC8FA?style=for-the-badge)](https://github.com/Kaelith69/SideQuest/blob/main/LICENSE)
+[![Status](https://img.shields.io/badge/Status-It_Works_On_My_Machine-34C759?style=for-the-badge)](https://github.com/Kaelith69/SideQuest)
 
-> "Stonks only go up." - *Warren Buffett (probably)*
+</div>
+
+**SideQuest** is a hyper-local, real-time task marketplace that connects neighbours. It is powered by real-time maps, atomic escrow payments, and a mobile-first interface — with zero build steps and zero custom backend.
+
+> *"You have money but no time. Your neighbour has time but needs money. SideQuest: now kith."* 🤝
+
+---
 
 ## 🎯 What is SideQuest?
 
-SideQuest bridges the gap between people who need help with tasks and neighbors who have time to help. It's powered by real-time maps, secure escrow payments, and a user-friendly interface that makes finding and offering help as easy as posting on social media.
+SideQuest bridges the gap between people who need help with everyday tasks and neighbours who have time to help. Post a quest, set a ₹ reward, and let someone nearby earn it.
 
-**The Simple Formula:**
-- **You**: Have money (₹), no time/energy
-- **Neighbor**: Has time/energy, wants money (₹)
-- **SideQuest**: *Now kith* 🤝
+**The Formula:**
 
-## ✨ Key Features at a Glance
+| You | Neighbour | Result |
+|---|---|---|
+| Have ₹, no time | Has time, needs ₹ | SideQuest connects you |
 
-### 🗺️ Interactive Real-Time Map
-- View all available tasks on a live map
-- See exact locations where help is needed
-- Automatic user location detection
-- Zoom, pan, and explore your neighborhood
+---
 
-### 💰 Secure Escrow System
-- Task posters deposit rewards upfront
-- Funds held safely in escrow
-- Automatic payment release upon task completion
-- Built-in wallet for earnings
+## ✨ Key Features
 
-### 👥 User Profiles & Ratings
-- Track your earnings and task history
-- Build reputation with 5-star ratings
-- View completed tasks and statistics
-- Profile customization options
+| Feature | Description |
+|---|---|
+| 🗺️ **Live Map** | Real-time task pins via MapLibre GL JS on OpenStreetMap tiles |
+| 💰 **Escrow Wallet** | Atomic Firestore transactions — no double-spend, ever |
+| 👥 **Profiles & Ratings** | 1–5 star ratings, wallet balance, task history |
+| 📱 **Mobile-First** | Safe-area insets, `svh` units, bottom-sheet modals |
+| 🧹 **Auto-Cleanup** | Tasks older than 24 h are automatically removed |
+| 🔍 **Search & Filter** | Category chips + full-text search |
 
-### 📱 Mobile-First Design
-- Responsive interface that works on all devices
-- Native-like mobile experience
-- Progressive Web App (PWA) ready
-- Touch-optimized controls
+---
 
-### 🏷️ Task Categories
-- **Help**: General assistance tasks
-- **Delivery**: Pick up and drop off items
-- **Social**: Companionship and social activities
-- **Other**: Custom task types
+## 📚 Wiki Pages
 
-### 🧹 Auto-Cleanup
-- Tasks older than 24 hours automatically removed
-- Keeps the map fresh and relevant
-- Prevents stale listings
+### Core Docs
+- **[Architecture](Architecture.md)** — System design, modules, and data flow
+- **[Installation](Installation.md)** — Set up SideQuest locally
+- **[Usage](Usage.md)** — How to post, claim, and complete tasks
 
-## 📚 Documentation Structure
+### Reference
+- **[Privacy](Privacy.md)** — What data is collected and why
+- **[Security Guide](Security-Guide.md)** — Firestore rules and security model
+- **[Roadmap](Roadmap.md)** — Planned features and future direction
 
-This wiki is organized into the following sections:
+### Help
+- **[Troubleshooting](Troubleshooting.md)** — Common issues and fixes
+- **[FAQ](FAQ.md)** — Frequently asked questions
 
-### Getting Started
-- **[Installation Guide](Installation-Guide.md)** - Set up SideQuest locally
-- **[Quick Start](Quick-Start.md)** - Get up and running in 5 minutes
-- **[Configuration](Configuration.md)** - Firebase and environment setup
+### Extended Reference
+- **[Technical Architecture](Technical-Architecture.md)** — Deep-dive component reference
+- **[Database Schema](Database-Schema.md)** — Firestore data structures
+- **[API Reference](API-Reference.md)** — Module function documentation
+- **[Development Guide](Development-Guide.md)** — Coding conventions and contributing
+- **[Deployment Guide](Deployment-Guide.md)** — Deploy to production
 
-### User Guides
-- **[User Guide](User-Guide.md)** - Complete guide for using SideQuest
-- **[Posting Tasks](Posting-Tasks.md)** - How to create and manage tasks
-- **[Claiming Tasks](Claiming-Tasks.md)** - How to find and complete tasks
-- **[Wallet & Payments](Wallet-and-Payments.md)** - Managing your earnings
-
-### Developer Documentation
-- **[Technical Architecture](Technical-Architecture.md)** - System design and components
-- **[Database Schema](Database-Schema.md)** - Firestore data structure
-- **[API Reference](API-Reference.md)** - Function documentation
-- **[Development Guide](Development-Guide.md)** - Contributing to SideQuest
-
-### Deployment & Operations
-- **[Deployment Guide](Deployment-Guide.md)** - Deploy to production
-- **[Security Guide](Security-Guide.md)** - Security best practices
-- **[Monitoring](Monitoring.md)** - Track app performance
-
-### Help & Support
-- **[Troubleshooting](Troubleshooting.md)** - Common issues and solutions
-- **[FAQ](FAQ.md)** - Frequently asked questions
-- **[Contributing](Contributing.md)** - How to contribute to the project
+---
 
 ## 🛠️ Tech Stack
 
-SideQuest is built with modern web technologies:
+| Layer | Technology |
+|---|---|
+| Markup | HTML5 |
+| Styling | Tailwind CSS (CDN) |
+| Scripting | Vanilla JS ES Modules |
+| Map | MapLibre GL JS 3.6.2 |
+| Auth | Firebase Auth 10.7.1 |
+| Database | Cloud Firestore 10.7.1 |
+| Hosting | Any static host |
 
-- **Frontend**: Vanilla JavaScript (ES6+)
-- **Styling**: Tailwind CSS
-- **Maps**: MapLibre GL JS
-- **Backend**: Firebase (Firestore + Authentication)
-- **Real-time**: Firestore real-time listeners
-- **Hosting**: Firebase Hosting (recommended)
+---
 
 ## 🚀 Quick Links
 
 - [GitHub Repository](https://github.com/Kaelith69/SideQuest)
-- [Report Issues](https://github.com/Kaelith69/SideQuest/issues)
-- [View Roadmap](Roadmap.md)
-
-## 🤝 Community
-
-- **License**: MIT - feel free to use, modify, and distribute
-- **Contributions**: We welcome pull requests and issues
-- **Support**: Check the FAQ or open an issue
-
-## 📝 Recent Updates
-
-Check the [Changelog](Changelog.md) for the latest updates and version history.
+- [Report a Bug](https://github.com/Kaelith69/SideQuest/issues/new)
+- [Report a Security Issue](https://github.com/Kaelith69/SideQuest/security/advisories/new)
+- [CHANGELOG](https://github.com/Kaelith69/SideQuest/blob/main/CHANGELOG.md)
 
 ---
 
-**Ready to get started?** Head to the [Installation Guide](Installation-Guide.md) to set up SideQuest on your machine!
+**Ready?** Start with the [Installation Guide](Installation.md).
 
-*Made with 💻 and 🍕 by Kaelith69*
+*Made with 💻 and ☕ by [Kaelith69](https://github.com/Kaelith69)*
