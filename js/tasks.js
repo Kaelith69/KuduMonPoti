@@ -11,10 +11,13 @@ import {
     query,
     orderBy,
     where,
-    getDocs
+    getDocs,
+    runTransaction,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { addMarker, getMapCenter, calculateDistance, clearMarkers, onUserLocationUpdate } from './map.js';
+import { showToast, showConfirm } from './ui.js';
 
 // Modals
 const createModal = document.getElementById('create-modal');
@@ -63,9 +66,40 @@ onUserLocationUpdate((loc) => {
     updateMarkers();
 });
 
+let userUnsubscribe = null;
+
+export function listenToUser(userId) {
+    if (userUnsubscribe) userUnsubscribe();
+
+    userUnsubscribe = onSnapshot(doc(db, "users", userId), (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            const balance = data.balance || 0;
+
+            // Update Profile UI
+            const balanceEl = document.getElementById('profile-wallet-balance');
+            if (balanceEl) balanceEl.textContent = `₹${balance.toFixed(2)}`;
+
+            // Update Create Modal UI
+            const createBalanceEl = document.getElementById('create-task-balance');
+            if (createBalanceEl) createBalanceEl.textContent = `₹${balance}`;
+        }
+    });
+}
+
 // UI Logic
 if (fab) {
     fab.addEventListener('click', () => {
+        // Update balance in modal
+        const user = auth.currentUser;
+        if (user) {
+            getDoc(doc(db, "users", user.uid)).then(snap => {
+                if (snap.exists()) {
+                    document.getElementById('create-task-balance').textContent = `₹${snap.data().balance}`;
+                }
+            });
+        }
+
         createModal.classList.remove('hidden');
         setTimeout(() => {
             document.getElementById('create-modal-backdrop').classList.remove('opacity-0');
@@ -142,7 +176,7 @@ if (saveProfileBtn) {
             closeModals();
         } catch (e) {
             console.error(e);
-            alert("Failed to update profile: " + e.message);
+            showToast("Failed to update profile: " + e.message, 'error');
         } finally {
             saveProfileBtn.textContent = "Save";
             saveProfileBtn.disabled = false;
@@ -190,16 +224,43 @@ if (submitRatingBtn) {
         submitRatingBtn.disabled = true;
 
         try {
-            await updateDoc(doc(db, "tasks", currentRatingTask.id), {
-                status: "completed",
-                rating: currentRatingValue,
-                completedAt: serverTimestamp()
+            await runTransaction(db, async (transaction) => {
+                const taskRef = doc(db, "tasks", currentRatingTask.id);
+                const taskSnap = await transaction.get(taskRef);
+                if (!taskSnap.exists()) throw new Error("Task not found");
+
+                const taskData = taskSnap.data();
+                if (taskData.status === 'completed') throw new Error("Task already completed");
+
+                // Credit Assignee
+                const assigneeId = taskData.assignee.id;
+                const assigneeRef = doc(db, "users", assigneeId);
+                const assigneeSnap = await transaction.get(assigneeRef);
+
+                if (assigneeSnap.exists()) {
+                    const currentBal = assigneeSnap.data().balance || 0;
+                    const reward = taskData.reward.amount || 0;
+                    transaction.update(assigneeRef, { balance: currentBal + reward });
+                } else {
+                    // Fallback if assignee has no wallet doc yet (create it)
+                    transaction.set(assigneeRef, {
+                        balance: taskData.reward.amount || 0,
+                        email: "unknown", // can't get this easily here, but balance is key
+                        createdAt: serverTimestamp()
+                    });
+                }
+
+                transaction.update(taskRef, {
+                    status: "completed",
+                    rating: currentRatingValue,
+                    completedAt: serverTimestamp()
+                });
             });
-            alert("Thanks for rating!");
+            showToast("Thanks for rating!", 'success');
             closeModals();
         } catch (e) {
             console.error(e);
-            alert("Error submitting rating");
+            showToast("Error submitting rating", 'error');
         } finally {
             submitRatingBtn.textContent = "Confirm & Rate";
             submitRatingBtn.disabled = false;
@@ -277,7 +338,7 @@ function switchView(view) {
     }
 }
 
-function renderProfile() {
+async function renderProfile() {
     const user = auth.currentUser;
     if (!user) return;
 
@@ -316,6 +377,29 @@ function renderProfile() {
     document.getElementById('stat-posted').textContent = postedCount;
     document.getElementById('stat-completed').textContent = completedCount;
     document.getElementById('stat-rating').textContent = avgRating;
+
+    // Verify User Doc & Balance
+    const userDocRef = doc(db, "users", user.uid);
+    let userBalance = 0;
+
+    // Show Loading Skeleton
+    const balanceEl = document.getElementById('profile-wallet-balance');
+    if (balanceEl) balanceEl.innerHTML = '<div class="skeleton h-6 w-20 inline-block"></div>';
+
+    try {
+        const userSnapshot = await getDoc(userDocRef);
+        if (userSnapshot.exists()) {
+            userBalance = userSnapshot.data().balance || 0;
+        } else {
+            // Initialize for existing users (Demo)
+            userBalance = 0;
+            // Optional: Create doc if missing? For now just read 0.
+        }
+    } catch (e) {
+        console.error("Error fetching balance:", e);
+    }
+
+    if (balanceEl) balanceEl.textContent = `₹${userBalance.toFixed(2)}`;
 
     // Update badge on profile page
     const badge = document.getElementById('profile-rating-badge');
@@ -376,26 +460,73 @@ if (createTaskForm) {
 
         const user = auth.currentUser;
         if (!user) {
-            alert("Must be logged in");
+            showToast("Must be logged in", 'error');
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
             return;
         }
 
         try {
-            await addDoc(collection(db, "tasks"), {
-                title,
-                category,
-                reward: { amount: parseFloat(reward) || 0, currency: "GBP" },
-                description: desc,
-                location: { lat: center.lat, lng: center.lng },
-                status: "open",
-                poster: {
-                    id: user.uid,
-                    name: user.displayName || user.email,
-                    avatar: user.photoURL || ""
-                },
-                createdAt: serverTimestamp()
+            await runTransaction(db, async (transaction) => {
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await transaction.get(userDocRef);
+
+                let currentBalance = 0;
+                let isNewUser = false;
+
+                if (userDoc.exists()) {
+                    currentBalance = userDoc.data().balance || 0;
+                } else {
+                    isNewUser = true;
+                    // Demo wallet creation logic
+                    currentBalance = 500;
+                }
+
+                let rewardAmount = 0;
+                if (reward && reward.trim() !== '') {
+                    rewardAmount = parseFloat(reward);
+                }
+
+                if (isNaN(rewardAmount)) {
+                    throw new Error("Invalid reward amount");
+                }
+
+                if (rewardAmount < 0) {
+                    throw new Error("Reward cannot be negative");
+                }
+
+                if (currentBalance < rewardAmount) {
+                    throw new Error(`Insufficient funds. You have ₹${currentBalance} but reward is ₹${rewardAmount}`);
+                }
+
+                const newBalance = currentBalance - rewardAmount;
+
+                if (isNewUser) {
+                    transaction.set(userDocRef, {
+                        email: user.email,
+                        name: user.displayName || "User",
+                        balance: newBalance,
+                        createdAt: serverTimestamp()
+                    });
+                } else {
+                    transaction.update(userDocRef, { balance: newBalance });
+                }
+
+                const newTaskRef = doc(collection(db, "tasks"));
+                transaction.set(newTaskRef, {
+                    title,
+                    category,
+                    reward: { amount: rewardAmount, currency: "INR" },
+                    description: desc,
+                    location: { lat: center.lat, lng: center.lng },
+                    status: "open",
+                    poster: {
+                        id: user.uid,
+                        name: user.displayName || user.email,
+                        avatar: user.photoURL || ""
+                    },
+                    createdAt: serverTimestamp()
+                });
             });
 
             closeModals();
@@ -403,7 +534,7 @@ if (createTaskForm) {
 
         } catch (error) {
             console.error("Error adding task: ", error);
-            alert("Failed to post task: " + error.message);
+            showToast("Failed to post task: " + error.message, 'error');
         } finally {
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
@@ -412,6 +543,8 @@ if (createTaskForm) {
 }
 
 // Listen for Tasks
+let isTasksLoaded = false;
+
 export function listenForTasks() {
     const q = query(collection(db, "tasks"), orderBy("createdAt", "desc"));
 
@@ -430,6 +563,7 @@ export function listenForTasks() {
             allTasks.push(task);
         });
 
+        isTasksLoaded = true;
         updateMarkers();
 
         const myTasksHidden = myTasksPage.classList.contains('hidden');
@@ -493,6 +627,17 @@ function renderMyTasks() {
         return;
     }
 
+    if (!isTasksLoaded) {
+        myTasksList.innerHTML = `
+            <div class="space-y-4 p-4">
+                <div class="skeleton h-20 w-full"></div>
+                <div class="skeleton h-20 w-full"></div>
+                <div class="skeleton h-20 w-full"></div>
+            </div>
+        `;
+        return;
+    }
+
     const filtered = allTasks.filter(task => {
         if (myTasksTab === 'posted') {
             return task.poster.id === user.uid;
@@ -521,7 +666,7 @@ function renderMyTasks() {
             </div>
             <div class="flex-1">
                 <h3 class="font-bold text-gray-900">${task.title}</h3>
-                <p class="text-sm ${statusColor}">${taskStatusLabel(task.status)} • £${task.reward.amount}</p>
+                <p class="text-sm ${statusColor}">${taskStatusLabel(task.status)} • ${task.reward.amount > 0 ? `₹${task.reward.amount}` : '<span class="text-green-600 font-medium">Volunteer</span>'}</p>
                 ${task.rating ? `<p class="text-xs text-yellow-500">★ ${task.rating}/5</p>` : ''}
             </div>
             <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium">View</button>
@@ -564,7 +709,14 @@ function openTaskDetail(task, dist) {
     document.getElementById('detail-time-dist').textContent = `${timeString} • ${dist.toFixed(2)} km away`;
 
     document.getElementById('detail-poster-name').textContent = task.poster.name;
-    document.getElementById('detail-price').textContent = `£${task.reward.amount}`;
+    const priceEl = document.getElementById('detail-price');
+    if (task.reward.amount > 0) {
+        priceEl.textContent = `₹${task.reward.amount}`;
+        priceEl.className = "bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold";
+    } else {
+        priceEl.textContent = "Volunteer";
+        priceEl.className = "bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold";
+    }
 
     const claimBtn = document.getElementById('claim-btn');
     const deleteBtn = document.getElementById('delete-btn');
@@ -582,10 +734,34 @@ function openTaskDetail(task, dist) {
         // I am the POSTER
         deleteBtn.classList.remove('hidden');
         deleteBtn.onclick = async () => {
-            if (confirm("Delete this task?")) {
-                await deleteDoc(doc(db, "tasks", task.id));
-                closeModals();
-            }
+            showConfirm("Delete Task?", "Costs will be refunded.", async () => {
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const taskRef = doc(db, "tasks", task.id);
+                        const taskSnap = await transaction.get(taskRef);
+                        if (!taskSnap.exists()) throw new Error("Task not found");
+
+                        // Refund Poster
+                        const posterId = taskSnap.data().poster.id;
+                        const userRef = doc(db, "users", posterId);
+                        const userSnap = await transaction.get(userRef);
+
+                        if (userSnap.exists()) {
+                            const currentBal = userSnap.data().balance || 0;
+                            const reward = taskSnap.data().reward.amount || 0;
+                            transaction.update(userRef, { balance: currentBal + reward });
+                        }
+
+                        transaction.delete(taskRef);
+                    });
+
+                    closeModals();
+                    showToast("Task deleted & refunded", 'success');
+                } catch (e) {
+                    console.error(e);
+                    showToast("Delete failed: " + e.message, 'error');
+                }
+            });
         };
 
         if (task.status === 'pending-confirmation') {
@@ -595,7 +771,14 @@ function openTaskDetail(task, dist) {
             claimBtn.onclick = () => {
                 currentRatingTask = task;
                 currentRatingValue = 0;
+                // Reset star and button state
                 updateStarsUI(0);
+                if (submitRatingBtn) {
+                    submitRatingBtn.disabled = true;
+                    submitRatingBtn.classList.remove('bg-primary', 'text-white');
+                    submitRatingBtn.classList.add('bg-gray-200', 'text-gray-400');
+                    submitRatingBtn.textContent = "Confirm & Rate";
+                }
                 ratingModal.classList.remove('hidden');
                 if (ratingModal.querySelector('#rating-modal-backdrop')) {
                     ratingModal.querySelector('#rating-modal-backdrop').classList.remove('opacity-0');
@@ -613,19 +796,34 @@ function openTaskDetail(task, dist) {
             claimBtn.textContent = "I'll do it!";
 
             claimBtn.onclick = async () => {
-                if (!user) { alert("Please login."); return; }
+                if (!user) { showToast("Please login.", 'error'); return; }
                 claimBtn.textContent = "Claiming...";
                 claimBtn.disabled = true;
                 try {
-                    await updateDoc(doc(db, "tasks", task.id), {
-                        status: "in-progress",
-                        assignee: { id: user.uid, name: user.displayName || user.email }
+                    await runTransaction(db, async (transaction) => {
+                        const taskRef = doc(db, "tasks", task.id);
+                        const taskDoc = await transaction.get(taskRef);
+                        if (!taskDoc.exists()) throw new Error("Task does not exist!");
+                        if (taskDoc.data().status !== 'open') throw new Error("Task already claimed!");
+
+                        transaction.update(taskRef, {
+                            status: "in-progress",
+                            assignee: {
+                                id: user.uid,
+                                name: user.displayName || user.email
+                            }
+                        });
                     });
                     closeModals();
+                    showToast("Task successfully claimed!", 'success');
                 } catch (e) {
-                    alert("Claim failed: " + e.message);
+                    showToast(e.message, 'error');
                     claimBtn.disabled = false;
                     claimBtn.textContent = "I'll do it!";
+                    // Refresh modal if task changed? Ideally close it to force refresh from map
+                    if (e.message.includes("already claimed")) {
+                        setTimeout(closeModals, 1500);
+                    }
                 }
             };
 
@@ -636,9 +834,9 @@ function openTaskDetail(task, dist) {
             claimBtn.onclick = async () => {
                 try {
                     await updateDoc(doc(db, "tasks", task.id), { status: "pending-confirmation" });
-                    alert("Marked as done! Wait for poster to confirm.");
+                    showToast("Marked as done! Wait for poster to confirm.", 'success');
                     closeModals();
-                } catch (e) { alert("Error: " + e.message); }
+                } catch (e) { showToast("Error: " + e.message, 'error'); }
             };
         } else if (task.status === 'pending-confirmation' && task.assignee?.id === user?.uid) {
             claimBtn.classList.remove('hidden');
@@ -657,6 +855,17 @@ function timeAgo(firebaseTimestamp) {
     if (!firebaseTimestamp) return '';
     const date = firebaseTimestamp.toDate();
     const seconds = Math.floor((new Date() - date) / 1000);
-    // ... simple implementation or use a library
-    return Math.floor(seconds / 60) + " min ago";
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hr ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} day${days !== 1 ? 's' : ''} ago`;
+    const weeks = Math.floor(days / 7);
+    if (weeks < 5) return `${weeks} week${weeks !== 1 ? 's' : ''} ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months} month${months !== 1 ? 's' : ''} ago`;
+    const years = Math.floor(days / 365);
+    return `${years} year${years !== 1 ? 's' : ''} ago`;
 }

@@ -3,6 +3,38 @@
 /* MapLibre Canvas base */
 .maplibregl-map {
     font-family: inherit;
+    /* Prevent pull-to-refresh on mobile maps */
+    touch-action: none;
+}
+
+/* Cross-browser Scrollbar Styling */
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+    /* scrollbar thumb and track */
+}
+
+/* Chrome, Edge, Safari */
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 20px;
+    border: 2px solid transparent;
+    /* adds padding effect */
+    background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
 }
 
 /* Glassmorphism Utilities (Tailwind handles most, but specific overrides here) */
@@ -13,33 +45,72 @@
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+/* Skeleton Loading Animation */
+.skeleton {
+    background: #e2e8f0;
+    border-radius: 0.5rem;
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton-text {
+    height: 1rem;
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: .5;
+    }
+}
+
 /* Custom Animations */
 @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
 }
 
 @keyframes slideDown {
-    from { transform: translateY(0); }
-    to { transform: translateY(100%); }
+    from {
+        transform: translateY(0);
+    }
+
+    to {
+        transform: translateY(100%);
+    }
 }
 
 /* Filter Chip Active/Inactive transitions */
 .filter-chip {
     transition: all 0.2s ease;
 }
+
 .filter-chip:active {
     transform: scale(0.95);
 }
 
 /* Modal Transitions */
-#create-modal-content, #detail-modal-content {
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); /* Ease Out Expoish */
+#create-modal-content,
+#detail-modal-content {
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    /* Ease Out Expoish */
 }
 
 /* Map Marker Styles */
 .marker {
-    background-image: url('https://docs.mapbox.com/mapbox-gl-js/assets/custom_marker.png'); /* Placeholder, we will use custom divs */
+    background-image: url('https://docs.mapbox.com/mapbox-gl-js/assets/custom_marker.png');
+    /* Placeholder, we will use custom divs */
     background-size: cover;
     width: 50px;
     height: 50px;
@@ -83,10 +154,12 @@
         transform: scale(0.95);
         box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7);
     }
+
     70% {
         transform: scale(1);
         box-shadow: 0 0 0 10px rgba(0, 122, 255, 0);
     }
+
     100% {
         transform: scale(0.95);
         box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);

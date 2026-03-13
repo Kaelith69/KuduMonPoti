@@ -1,6 +1,6 @@
-# TaskPop Function Specification
+# SideQuest Function Specification
 
-This document lists all the functions required for the TaskPop application, categorized by module. It serves as a checklist for implementation.
+This document lists all the functions required for the SideQuest application, categorized by module. It serves as a checklist for implementation.
 
 ## 1. Authentication (`js/auth.js`)
 
