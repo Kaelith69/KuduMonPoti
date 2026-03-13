@@ -72,6 +72,35 @@ service cloud.firestore {
         && request.resource.data.balance == previousBalance + taskBefore.data.reward.amount;
     }
 
+    function validPayoutCreditCreate(userId) {
+      let taskId = request.resource.data.lastPayoutTaskId;
+      let taskPath = /databases/$(database)/documents/tasks/$(taskId);
+      let taskBefore = get(/databases/$(database)/documents/tasks/$(taskId));
+      let taskAfter = getAfter(/databases/$(database)/documents/tasks/$(taskId));
+
+      return isSignedIn()
+        && request.auth.uid != userId
+        && request.resource.data.keys().hasOnly(['name', 'balance', 'createdAt', 'lastPayoutTaskId', 'email'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 120
+        && request.resource.data.balance is number
+        && request.resource.data.balance >= 0
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.lastPayoutTaskId is string
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 320
+        && taskId is string
+        && exists(taskPath)
+        && existsAfter(taskPath)
+        && taskBefore.data.status == 'pending-confirmation'
+        && taskAfter.data.status == 'completed'
+        && taskBefore.data.poster.id == request.auth.uid
+        && taskBefore.data.assignee.id == userId
+        && taskBefore.data.reward.amount is number
+        && request.resource.data.balance == taskBefore.data.reward.amount;
+    }
+
     function validLocation(loc) {
       return loc is map
         && loc.keys().hasOnly(['lat', 'lng'])
@@ -158,7 +187,7 @@ service cloud.firestore {
     // Users: authenticated access with strict field validation.
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if validUserCreate(userId);
+      allow create: if validUserCreate(userId) || validPayoutCreditCreate(userId);
       allow update: if validSelfUserUpdate(userId) || validPayoutCreditUpdate(userId);
       allow delete: if false;
     }

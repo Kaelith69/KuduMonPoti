@@ -384,7 +384,14 @@ if (submitRatingBtn) {
                         lastPayoutTaskId: currentRatingTask.id
                     });
                 } else {
-                    throw new Error("Assignee profile missing. Ask assignee to open the app once.");
+                    const reward = Number(taskData.reward?.amount || 0);
+                    transaction.set(assigneeRef, {
+                        name: taskData.assignee?.name || "User",
+                        email: "",
+                        balance: reward,
+                        lastPayoutTaskId: currentRatingTask.id,
+                        createdAt: serverTimestamp()
+                    });
                 }
 
                 transaction.update(taskRef, {
@@ -1011,6 +1018,23 @@ function openTaskDetail(task, dist) {
                         if (taskDoc.data().poster?.id === user.uid) {
                             throw new Error("You cannot claim your own task.");
                         }
+
+                        const selfUserRef = doc(db, "users", user.uid);
+                        const selfUserSnap = await transaction.get(selfUserRef);
+                        const existingUser = selfUserSnap.exists() ? selfUserSnap.data() : {};
+                        const normalizedEmail = (typeof existingUser.email === 'string' && existingUser.email.trim())
+                            ? existingUser.email
+                            : (user.email || "unknown@sidequest.local");
+                        const normalizedName = (typeof existingUser.name === 'string' && existingUser.name.trim())
+                            ? existingUser.name
+                            : (user.displayName || user.email || "User");
+
+                        transaction.set(selfUserRef, {
+                            email: normalizedEmail,
+                            name: normalizedName,
+                            ...(existingUser.createdAt ? {} : { createdAt: serverTimestamp() }),
+                            ...(typeof existingUser.balance === 'number' ? {} : { balance: 0 })
+                        }, { merge: true });
 
                         transaction.update(taskRef, {
                             status: "in-progress",
