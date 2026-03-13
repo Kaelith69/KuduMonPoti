@@ -273,7 +273,10 @@ if (submitRatingBtn) {
                 if (assigneeSnap.exists()) {
                     const currentBal = Number(assigneeSnap.data().balance || 0);
                     const reward = Number(taskData.reward?.amount || 0);
-                    transaction.update(assigneeRef, { balance: currentBal + reward });
+                    transaction.update(assigneeRef, {
+                        balance: currentBal + reward,
+                        lastPayoutTaskId: currentRatingTask.id
+                    });
                 } else {
                     throw new Error("Assignee profile missing. Ask assignee to open the app once.");
                 }
